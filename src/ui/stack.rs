@@ -222,7 +222,7 @@ impl Editor {
                 ui.painter().rect_stroke(
                     response.rect,
                     3.,
-                    Stroke::new(0.75, Color32::from_gray(225)),
+                    Stroke::new(0.75_f32, Color32::from_gray(225)),
                     egui::StrokeKind::Inside,
                 );
                 if let Some(pointer) = ui.ctx().pointer_interact_pos() {
@@ -265,7 +265,7 @@ impl Editor {
                 };
                 ui.painter().line_segment(
                     [egui::pos2(first.left(), y), egui::pos2(first.right(), y)],
-                    Stroke::new(2., Color32::from_gray(55)),
+                    Stroke::new(2_f32, Color32::from_gray(55)),
                 );
                 ui.painter()
                     .circle_filled(egui::pos2(first.left(), y), 3., Color32::from_gray(55));
@@ -304,7 +304,7 @@ fn step_frame(selected: bool) -> egui::Frame {
         .inner_margin(8)
         .corner_radius(3)
         .stroke(Stroke::new(
-            0.75,
+            0.75_f32,
             Color32::from_gray(if selected { 205 } else { 232 }),
         ))
 }
@@ -347,7 +347,7 @@ fn step_icon(ui: &mut egui::Ui, card_id: u64, action: StepAction, enabled: bool)
         if response.hovered() || response.is_pointer_button_down_on() {
             ui.painter().rect_filled(rect, 2., visuals.weak_bg_fill);
         }
-        let stroke = Stroke::new(1.25, visuals.fg_stroke.color);
+        let stroke = Stroke::new(1.25_f32, visuals.fg_stroke.color);
         let center = rect.center();
         let point = |x, y| center + egui::vec2(x, y);
         match action {
@@ -432,7 +432,7 @@ fn preview_button(ui: &mut egui::Ui, selected: bool) -> egui::Response {
             .selected(selected)
             .corner_radius(2)
             .stroke(Stroke::new(
-                0.75,
+                0.75_f32,
                 Color32::from_gray(if selected { 210 } else { 232 }),
             )),
     )

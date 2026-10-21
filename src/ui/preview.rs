@@ -142,7 +142,7 @@ impl Preview {
                 painter.rect_stroke(
                     image_rect.expand(0.5),
                     0,
-                    Stroke::new(0.75, Color32::from_gray(230)),
+                    Stroke::new(0.75_f32, Color32::from_gray(230)),
                     egui::StrokeKind::Outside,
                 );
                 paint_image(&painter, handle, image_rect);
@@ -280,7 +280,7 @@ impl Preview {
                         rect,
                         2,
                         Color32::WHITE,
-                        Stroke::new(0.75, color),
+                        Stroke::new(0.75_f32, color),
                         egui::StrokeKind::Inside,
                     );
                     let size = handle.size_vec2();

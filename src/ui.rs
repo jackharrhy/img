@@ -307,13 +307,13 @@ fn style(ctx: &egui::Context) {
         visuals.extreme_bg_color = Color32::from_gray(255);
         visuals.override_text_color = Some(Color32::from_gray(text));
         visuals.hyperlink_color = Color32::from_gray(text);
-        visuals.window_stroke = Stroke::new(0.75, Color32::from_gray(border));
+        visuals.window_stroke = Stroke::new(0.75_f32, Color32::from_gray(border));
         visuals.window_shadow = egui::epaint::Shadow::NONE;
         visuals.popup_shadow = egui::epaint::Shadow::NONE;
         visuals.window_corner_radius = egui::CornerRadius::same(2);
         visuals.menu_corner_radius = egui::CornerRadius::same(2);
         visuals.selection.bg_fill = Color32::from_gray(242);
-        visuals.selection.stroke = Stroke::new(1., Color32::from_gray(text));
+        visuals.selection.stroke = Stroke::new(1_f32, Color32::from_gray(text));
         for (widget, fill) in [
             (&mut visuals.widgets.noninteractive, surface),
             (&mut visuals.widgets.inactive, 255),
@@ -324,8 +324,8 @@ fn style(ctx: &egui::Context) {
             widget.corner_radius = egui::CornerRadius::same(2);
             widget.bg_fill = Color32::from_gray(fill);
             widget.weak_bg_fill = Color32::from_gray(fill);
-            widget.bg_stroke = Stroke::new(0.75, Color32::from_gray(border));
-            widget.fg_stroke = Stroke::new(1., Color32::from_gray(text));
+            widget.bg_stroke = Stroke::new(0.75_f32, Color32::from_gray(border));
+            widget.fg_stroke = Stroke::new(1_f32, Color32::from_gray(text));
             widget.expansion = 0.;
         }
         style.spacing.item_spacing = egui::vec2(8., 4.);
