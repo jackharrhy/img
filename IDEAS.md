@@ -4,10 +4,10 @@
 - Aspect-ratio lock, percent resize, fit/fill, and nearest-neighbor for pixel art.
 - Crop, rotate, flip, frame range, ping-pong, speed, and per-frame timing.
 - Undo/redo and a serializable operation recipe with source-path relinking.
-- Duplicate cards, keyboard reordering, and a clearer insertion marker while dragging.
+- Duplicate cards and keyboard reordering.
 
 ## Preview and export
-- Checkerboard transparency, zoom/pan, and frame stepping.
+- Continuous zoom and pointer-based panning.
 - Explicit loop controls, including a preview mode honoring finite repeats.
 - Alpha threshold/matte options and premultiplied-alpha resize to improve transparent edges.
 - Palette/dither controls and optimized delta-frame export; show output size before saving.
@@ -19,6 +19,6 @@
 - Incremental recompute from the changed card; cancellation and progress for long jobs.
 - Clear memory-budget estimates before an operation runs.
 - Additional malformed-GIF fixtures, fuzzing, and peak-memory tests.
-- ImageMagick version/capability check in the UI; richer bounded error reporting.
+- Evaluate FFmpeg for video import/export and filters where it improves capability or throughput.
 
-Keep the default path fully local and Rust-native. Optional external tools should remain explicit, fixed operations with no shell command interpolation.
+Choose the best implementation per operation; simple frame/pixel edits run directly in Rust. Optional external tools should remain explicit, fixed operations with no shell command interpolation.

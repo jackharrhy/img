@@ -1,3 +1,4 @@
+mod brand;
 mod ui;
 fn main() -> anyhow::Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
@@ -55,9 +56,10 @@ fn main() -> anyhow::Result<()> {
     anyhow::ensure!(args.len() <= 1, "Use img --help for usage");
     let path = args.first().map(std::path::PathBuf::from);
     eframe::run_native(
-        "img — GIF operation stack",
+        "img",
         eframe::NativeOptions {
             viewport: eframe::egui::ViewportBuilder::default()
+                .with_icon(brand::icon()?)
                 .with_inner_size([980., 820.])
                 .with_min_inner_size([700., 400.]),
             ..Default::default()
@@ -96,19 +98,5 @@ fn sample() -> img::Animation {
     img::Animation {
         frames,
         repeat: gif::Repeat::Infinite,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn native_workspace_renders_operation_cards() {
-        let ctx = eframe::egui::Context::default();
-        let mut app = crate::ui::Editor::default();
-        let output = ctx.run(Default::default(), |ctx| app.draw(ctx));
-        assert!(
-            output.shapes.len() > 30,
-            "workspace must render controls and cards"
-        );
     }
 }

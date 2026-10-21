@@ -9,10 +9,10 @@ Install Apple's command-line tools (`xcode-select --install`) and a current stab
 ```sh
 git clone git@github.com:jackharrhy/img.git
 cd img
-cargo run --locked --release -- samples/blue-block.gif
+cargo run --locked --release -- samples/hummingbird.gif
 ```
 
-No ImageMagick is needed for import, resize, reverse, previews, or export. For the optional Negate card only, install ImageMagick 7 (`brew install imagemagick`) and launch from a terminal where `magick` is on PATH. This is a source build, not a signed/notarized macOS app bundle. macOS execution has not yet been verified on hardware.
+Import, resize, reverse, negate, previews, and export run directly in Rust with no external processing tools required. To build a local macOS app bundle with the app icon, run `scripts/build-macos-app.sh`; the result is `artifacts/img.app`. The bundle is unsigned and not notarized. The release build and GIF processing smoke check have been verified on Apple silicon macOS; native dialogs still need desktop verification.
 
 ## Run on Linux
 
@@ -20,20 +20,22 @@ Install Rust, a C toolchain, and OpenGL development/runtime libraries. On Ubuntu
 
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
-cargo run --locked --release -- samples/blue-block.gif
+cargo run --locked --release -- samples/hummingbird.gif
 ```
 
 Native dialogs use the desktop's XDG portal; install `xdg-desktop-portal` and the appropriate backend (GTK/KDE/etc.) if file dialogs do not appear. An X11 or Wayland desktop is needed for the UI. Passing a GIF path opens it without a file dialog.
 
 ## Edit
 
-- **Open GIF…** imports and composites all frames, including frame offsets and disposal modes.
-- The original stays at the top. Each operation has controls on its **left** and its own animated output on its **right**.
-- Resize sets independent width and height with a triangle filter. Reverse moves each frame together with its delay.
-- Drag the title text in a blue heading onto another card to reorder. Up/Down buttons also work. Uncheck Enabled to bypass, or Remove to delete.
-- Scroll down to add Resize, Reverse, or optional ImageMagick Negate cards (up to 16).
-- Pause/Play controls all previews. **Export GIF…** writes the final stack output; an empty stack exports the source.
-- Work runs on background threads. Editing and export are disabled while a job is running; errors appear in the bottom status bar.
+- The input card is **Import GIF**, with file selection, replacement, filename, and animation details inside the step. It stays first because subsequent steps need its frames. The original file is never modified.
+- **Add operation** below the last card adds Resize, Reverse, or Negate (up to 16 operations). New inputs start without preset operations.
+- Steps run from top to bottom. **Preview** on a step selects its output in the single viewer on the right. The latest output is selected automatically; adding a step returns to the latest output.
+- Resize sets independent width and height with a triangle filter. Reverse moves each frame together with its delay. Click the eye in a step’s header to bypass or apply it: open means applied, closed means bypassed. Bypassed steps fade; their controls remain editable. Use the trash icon at the top right to delete a step.
+- Drag a step by its dotted grip. The whole card lifts under the pointer with its original size and grab position. An empty slot stays behind, and an insertion line marks the drop position. Dropping outside the list cancels. Escape cancels. Edge scrolling follows the pointer; arrow icons beside the grip also reorder.
+- **Fit** scales the image to the viewer; **100%** displays actual pixels with scrolling for larger images. Checkerboard transparency stays inside the image boundary.
+- **Show frames** opens a horizontal frame strip below the image. Click a thumbnail to pause and inspect it, including its duration. Previous/next buttons or Left/Right arrows step through frames; Space plays or pauses from the current frame.
+- **Export result…** saves the final stack output, regardless of which step is being previewed. An empty operation stack exports the input.
+- The interface is light-only and uses the system font on macOS. Work runs on background threads. Editing and export are disabled during processing; Add operation and Export result scroll with the cards. Progress, errors, and confirmations share a fixed space below those buttons. The previous preview stays visible while steps update.
 
 ## GIF behavior and limits
 
@@ -41,7 +43,7 @@ Frame delays and loop metadata survive the Rust operations and export. Export us
 
 Input is limited to 64 MiB compressed, 4096 pixels per dimension, 1000 frames, and 256 MiB decoded pixel data. The operation stack also has a 256 MiB retained-pixel budget (not a total-process memory cap). Exports use a temporary file beside the destination and replace the target only after encoding succeeds.
 
-ImageMagick is an optional fixed **RGB negate** operation, not an arbitrary command prompt: Rust invokes `magick` directly without a shell, using generated temporary input/output paths, resource limits, and a 30-second timeout. It processes a re-encoded GIF rather than a user-controlled ImageMagick filename or expression. Timing and loop metadata are restored after processing. This is not an OS sandbox; use a trusted, updated local ImageMagick installation.
+Negate inverts each RGB channel directly in decoded frames and leaves alpha, timing, and looping intact. Operations retain full RGBA pixels until export, avoiding intermediate GIF quantization. Choose processing tools per operation: simple pixel/frame edits stay in Rust; evaluate FFmpeg for video formats and advanced filter chains when those features are added.
 
 ## Verify
 
@@ -53,7 +55,15 @@ cargo run --locked -- --generate-sample samples/blue-block.gif
 cargo run --locked -- --smoke samples/blue-block.gif edited.gif
 ```
 
-Tests cover GIF pixels/transparency, timing and looping, resize/reverse/reorder/bypass, offset/disposal decoding, invalid inputs and memory budgets, atomic export failure, CLI roundtrips, and basic native UI rendering. The ImageMagick integration test skips with an explanatory message when `magick` is absent (`cargo test --test imagemagick -- --nocapture`).
+Tests cover GIF pixels/transparency, timing and looping, resize/reverse/reorder/bypass, offset/disposal decoding, invalid inputs and memory budgets, atomic export failure, CLI roundtrips, and headless native UI interactions. Negate is tested against every pixel of the bundled 45-frame hummingbird GIF; no tests require ImageMagick.
+
+Seeded stateful pipeline tests perform 700 edits across seven fixed seeds. They add, edit, move, bypass, and remove operations, check every intermediate output against an independent color/order/dimension model, then export and reopen after every edit. Failures include a replay command and action history. Run longer sequences or reproduce a particular seed with:
+
+```sh
+IMG_FUZZ_SEED=42 IMG_FUZZ_STEPS=10000 cargo test --locked --release --test seeded_pipeline -- --nocapture
+```
+
+These exercise import → processing → export → reimport without a desktop. Separate headless egui event tests cover the operation menu, asynchronous Negate on the real sample, and bypassing it; file dialogs still need desktop verification.
 
 An actual Linux native-window smoke test (not a web mockup):
 
@@ -64,7 +74,7 @@ cargo build --locked
 xvfb-run -a -s '-screen 0 1280x1000x24' python3 scripts/native-smoke.py
 ```
 
-It checks that the app stays alive and captures changing animation, then captures drag-reordered and bypassed states for visual inspection. Screenshots and the native log land in ignored `artifacts/`. Coordinate-driven interactions assume the default window size and scale.
+It checks that the native window stays alive and captures changing animation. Screenshots and the native log land in ignored `artifacts/`. Headless UI interaction tests verify adding, reordering, bypassing, removing, drag cancellation, and frame inspection without relying on window coordinates.
 
 On a machine with limited root disk space, put the checkout, target directory, and temporary directory on the larger volume before building:
 
@@ -76,4 +86,4 @@ export TMPDIR=/mnt/terrabud/dev/img/.tmp
 
 ## Scope
 
-This is a working vertical slice, not a complete editor. No undo, project persistence, cancellation of Rust operations, aspect-ratio lock, frame timeline, or optimized export yet. See [IDEAS.md](IDEAS.md).
+This is a working vertical slice, not a complete editor. No undo, project persistence, cancellation of Rust operations, aspect-ratio lock, frame editing, or optimized export yet. See [IDEAS.md](IDEAS.md).

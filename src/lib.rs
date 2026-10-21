@@ -89,7 +89,7 @@ impl Animation {
 pub enum Operation {
     Resize { width: u32, height: u32 },
     Reverse,
-    ImageMagickNegate,
+    Negate,
 }
 #[derive(Clone, Debug)]
 pub struct Card {
@@ -111,7 +111,7 @@ pub fn process(
                     dimensions(width, height)?;
                     width as usize * height as usize * 4 * current.frames.len()
                 }
-                Operation::Reverse | Operation::ImageMagickNegate => current.bytes(),
+                Operation::Reverse | Operation::Negate => current.bytes(),
             };
             total += required;
             ensure!(
@@ -119,7 +119,22 @@ pub fn process(
                 "Operation stack exceeds 256 MiB; reduce dimensions or remove cards"
             );
             let next = match card.operation {
-                Operation::ImageMagickNegate => imagemagick_negate(&current)?,
+                Operation::Negate => Animation {
+                    repeat: current.repeat,
+                    frames: current
+                        .frames
+                        .iter()
+                        .map(|frame| {
+                            let mut frame = frame.clone();
+                            for pixel in frame.pixels.pixels_mut() {
+                                for channel in &mut pixel.0[..3] {
+                                    *channel = 255 - *channel;
+                                }
+                            }
+                            frame
+                        })
+                        .collect(),
+                },
                 Operation::Resize { width, height } => Animation {
                     repeat: current.repeat,
                     frames: current
@@ -146,52 +161,6 @@ pub fn process(
         outputs.push(current.clone());
     }
     Ok(outputs)
-}
-
-fn imagemagick_negate(source: &Animation) -> Result<Animation> {
-    use std::{
-        process::{Command, Stdio},
-        time::{Duration, Instant},
-    };
-    let temp = tempfile::tempdir()?;
-    let input = temp.path().join("input.gif");
-    let output = temp.path().join("output.gif");
-    source.save(&input)?;
-    let mut child=Command::new("magick")
-        .args(["-limit","memory","128MiB","-limit","map","256MiB","-limit","disk","0","-limit","thread","2"])
-        .arg(&input).args(["-coalesce","-channel","RGB","-negate","+channel"]).arg(&output)
-        .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
-        .spawn().context("ImageMagick 7 is optional: install it so `magick` is on PATH, or remove/bypass this card")?;
-    let start = Instant::now();
-    loop {
-        if let Some(status) = child.try_wait()? {
-            ensure!(
-                status.success(),
-                "ImageMagick failed ({status}); input may exceed its resource limits"
-            );
-            break;
-        }
-        if start.elapsed() > Duration::from_secs(30) {
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!("ImageMagick exceeded 30 seconds");
-        }
-        std::thread::sleep(Duration::from_millis(25));
-    }
-    let mut result = Animation::load(&output)?;
-    ensure!(
-        result.frames.len() == source.frames.len(),
-        "ImageMagick changed frame count"
-    );
-    result.repeat = source.repeat;
-    for (frame, original) in result.frames.iter_mut().zip(&source.frames) {
-        ensure!(
-            frame.pixels.dimensions() == original.pixels.dimensions(),
-            "ImageMagick changed dimensions"
-        );
-        frame.delay_ms = original.delay_ms;
-    }
-    Ok(result)
 }
 
 fn dimensions(w: u32, h: u32) -> Result<()> {

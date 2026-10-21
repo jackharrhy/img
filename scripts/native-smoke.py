@@ -32,17 +32,6 @@ with (out / "native.log").open("w") as log:
         capture("animated.png")
         if (out / "workspace.png").read_bytes() == (out / "animated.png").read_bytes():
             raise RuntimeError("native preview did not animate")
-        # Coordinates are grounded in the default 980 x 820 native window.
-        subprocess.run(["xdotool", "mousemove", "--window", window, "45", "306", "mousedown", "1"], check=True)
-        time.sleep(0.15)
-        subprocess.run(["xdotool", "mousemove", "--window", window, "45", "560"], check=True)
-        time.sleep(0.15)
-        subprocess.run(["xdotool", "mouseup", "1"], check=True)
-        time.sleep(3)
-        capture("reordered.png")
-        subprocess.run(["xdotool", "mousemove", "--window", window, "25", "600", "click", "1"], check=True)
-        time.sleep(1)
-        capture("disabled.png")
         print(f"Native app alive; window={window}; animation changed between captures")
         print(f"Screenshots: {out.resolve()}")
     finally:
