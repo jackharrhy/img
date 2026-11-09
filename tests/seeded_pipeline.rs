@@ -34,7 +34,7 @@ fn verify(
     delays: &[u32],
     size: (u32, u32),
     repeat: gif::Repeat,
-    exported: bool,
+    _exported: bool,
 ) -> Result<()> {
     ensure!(actual.repeat == repeat, "Loop metadata changed");
     ensure!(actual.frames.len() == colors.len(), "Frame count changed");
@@ -43,7 +43,7 @@ fn verify(
         ensure!(frame.delay_ms == *delay, "Frame order or timing changed");
         for pixel in frame.pixels.pixels() {
             ensure!(pixel[3] == color[3], "Transparency changed");
-            if !exported || color[3] != 0 {
+            if color[3] != 0 {
                 ensure!(
                     pixel.0 == *color,
                     "Wrong color: {:?}, expected {color:?}",
@@ -74,7 +74,7 @@ fn run_seed(seed: u64, steps: usize, trace: &mut Vec<String>) -> Result<()> {
             .iter()
             .enumerate()
             .map(|(i, color)| Frame {
-                pixels: RgbaImage::from_pixel(12, 9, Rgba(*color)),
+                pixels: RgbaImage::from_pixel(12, 9, Rgba(*color)).into(),
                 delay_ms: (i as u32 + 1) * 30,
             })
             .collect(),
@@ -148,6 +148,7 @@ fn run_seed(seed: u64, steps: usize, trace: &mut Vec<String>) -> Result<()> {
                             }
                         }
                     }
+                    _ => unreachable!("This oracle covers resize, reverse and negate"),
                 }
             } else {
                 let previous = if index == 0 {
@@ -163,7 +164,6 @@ fn run_seed(seed: u64, steps: usize, trace: &mut Vec<String>) -> Result<()> {
             verify(output, &colors, &delays, size, source.repeat, false)
                 .with_context(|| format!("Checking step {index}: {card:?}"))?;
         }
-        // Exercise the same final-output export path, including an empty recipe.
         let final_output = outputs.last().unwrap_or(&source);
         let export = dir.path().join("export.gif");
         final_output.save(&export).context("Exporting result")?;

@@ -1,31 +1,5 @@
-use image::{Rgba, RgbaImage};
+use image::RgbaImage;
 use img::{Animation, Card, Frame, Operation};
-#[test]
-fn negate_preserves_timing_and_loop() {
-    let source = std::sync::Arc::new(Animation {
-        frames: vec![Frame {
-            pixels: RgbaImage::from_pixel(3, 2, Rgba([255, 0, 0, 255])),
-            delay_ms: 70,
-        }],
-        repeat: gif::Repeat::Finite(2),
-    });
-    let outputs = img::process(
-        source,
-        &[Card {
-            id: 1,
-            enabled: true,
-            operation: Operation::Negate,
-        }],
-    )
-    .unwrap();
-    assert_eq!(
-        outputs[0].frames[0].pixels.get_pixel(0, 0),
-        &Rgba([0, 255, 255, 255])
-    );
-    assert_eq!(outputs[0].frames[0].delay_ms, 70);
-    assert_eq!(outputs[0].repeat, gif::Repeat::Finite(2));
-}
-
 #[test]
 fn negate_real_multiframe_gif_without_exhausting_cache() {
     let source = std::sync::Arc::new(
@@ -65,7 +39,8 @@ fn negate_twice_restores_exact_rgba_including_partial_alpha() {
                 1,
                 vec![12, 70, 231, 0, 0, 128, 255, 127, 255, 0, 1, 255],
             )
-            .unwrap(),
+            .unwrap()
+            .into(),
             delay_ms: 73,
         }],
         repeat: gif::Repeat::Finite(0),

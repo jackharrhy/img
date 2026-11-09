@@ -9,6 +9,11 @@ mkdir -p "$bundle_dir/Contents/MacOS" "$bundle_dir/Contents/Resources"
 cp "${CARGO_TARGET_DIR:-target}/release/img" "$bundle_dir/Contents/MacOS/img.next"
 mv -f "$bundle_dir/Contents/MacOS/img.next" "$bundle_dir/Contents/MacOS/img"
 cp assets/icon.icns "$bundle_dir/Contents/Resources/icon.icns"
+mkdir -p "$bundle_dir/Contents/Resources/licenses/fonts"
+cp assets/fonts/LICENSE.txt "$bundle_dir/Contents/Resources/licenses/fonts/Inter.txt"
+for family in anton bangers bebasneue; do
+    cp "assets/fonts/$family/OFL.txt" "$bundle_dir/Contents/Resources/licenses/fonts/$family.txt"
+done
 python3 - "$bundle_dir" <<'PY'
 import json
 import plistlib

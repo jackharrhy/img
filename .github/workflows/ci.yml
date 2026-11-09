@@ -5,6 +5,7 @@ permissions:
 jobs:
   check:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -12,11 +13,39 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.99.1
           components: rustfmt, clippy
       - name: Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libvulkan1 mesa-vulkan-drivers
       - run: cargo fmt --check
       - run: cargo test --locked
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo build --locked --release
+      - name: Render Rune UI with the GPU backend
+        run: scripts/render-smoke.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rune-previews-${{ matrix.os }}
+          path: |
+            artifacts/spatial-*.png
+            artifacts/numbers.png
+            artifacts/numbers-small.png
+            artifacts/editor.png
+            artifacts/editing.png
+            artifacts/editing-small.png
+            artifacts/editing-retina.png
+            artifacts/editor-small.png
+            artifacts/drag.png
+            artifacts/caption.png
+            artifacts/caption-small.png
+            artifacts/caption-retina.png
+            artifacts/typography.png
+            artifacts/typography-retina.png
+            artifacts/fonts.png
+            artifacts/fonts-small.png
+            artifacts/fonts-retina.png
+            artifacts/text-drag.png
+            artifacts/picker.png
+            artifacts/color-picker.png
+            artifacts/color-picker-small.png

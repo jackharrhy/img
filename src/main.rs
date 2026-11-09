@@ -1,4 +1,3 @@
-mod brand;
 mod ui;
 fn main() -> anyhow::Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
@@ -9,7 +8,10 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
     if args.first().is_some_and(|arg| arg == "--smoke") {
-        anyhow::ensure!(args.len() == 3, "Usage: img --smoke INPUT.gif OUTPUT.gif");
+        anyhow::ensure!(
+            args.len() == 3,
+            "Usage: img --smoke INPUT.gif OUTPUT.gif\nimg --scene loaded|edited --snap OUTPUT.png [--size 980x820]"
+        );
         let source = std::sync::Arc::new(img::Animation::load(std::path::Path::new(&args[1]))?);
         let cards = [
             img::Card {
@@ -49,30 +51,11 @@ fn main() -> anyhow::Result<()> {
     }
     if args.first().is_some_and(|arg| arg == "--help") {
         println!(
-            "img [INPUT.gif]\nimg --generate-sample OUTPUT.gif\nimg --smoke INPUT.gif OUTPUT.gif"
+            "img [INPUT.gif]\nimg --generate-sample OUTPUT.gif\nimg --smoke INPUT.gif OUTPUT.gif\nimg --scene loaded|edited --snap OUTPUT.png [--size 980x820]"
         );
         return Ok(());
     }
-    anyhow::ensure!(args.len() <= 1, "Use img --help for usage");
-    let path = args.first().map(std::path::PathBuf::from);
-    eframe::run_native(
-        "img",
-        eframe::NativeOptions {
-            viewport: eframe::egui::ViewportBuilder::default()
-                .with_icon(brand::icon()?)
-                .with_inner_size([980., 820.])
-                .with_min_inner_size([700., 400.]),
-            ..Default::default()
-        },
-        Box::new(move |cc| {
-            let mut app = ui::Editor::default();
-            if let Some(path) = path {
-                app.open(path, &cc.egui_ctx);
-            }
-            Ok(Box::new(app))
-        }),
-    )
-    .map_err(|error| anyhow::anyhow!("{error}"))
+    ui::run()
 }
 
 fn sample() -> img::Animation {
@@ -90,7 +73,7 @@ fn sample() -> img::Animation {
                 }
             }
             img::Frame {
-                pixels,
+                pixels: pixels.into(),
                 delay_ms: if i == 11 { 350 } else { 80 },
             }
         })
