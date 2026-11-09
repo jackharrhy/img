@@ -56,12 +56,12 @@ fn native_dialog_routes_import_negate_and_export_through_real_engine() {
     assert!(rt.file_dialog().is_some());
     rt.resolve_file_dialog(Some(PathBuf::from(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/samples/hummingbird.gif"
+        "/samples/blue-block.gif"
     ))))
     .unwrap();
     rt.frame(0.01);
     settle(&mut rt);
-    assert_eq!(rt.state.source.as_ref().unwrap().frames.len(), 45);
+    assert_eq!(rt.state.source.as_ref().unwrap().frames.len(), 12);
     add(&mut rt, "Negate");
     let output = rt.state.displayed.clone().unwrap();
     let original = rt.state.source.as_ref().unwrap().frames[0]
@@ -283,24 +283,34 @@ fn replacing_source_keeps_effects_and_can_be_undone_and_redone() {
     let collapsed = rt.state.collapsed.clone();
     let next_id = rt.state.next_id;
     let name = rt.state.name.clone();
-    click(&mut rt, "open");
-    rt.resolve_file_dialog(Some(PathBuf::from(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/samples/hummingbird.gif"
-    ))))
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("replacement.gif");
+    Animation {
+        frames: [[240, 30, 60, 255], [20, 210, 90, 255]]
+            .into_iter()
+            .map(|color| img::Frame {
+                pixels: image::RgbaImage::from_pixel(64, 48, image::Rgba(color)).into(),
+                delay_ms: 70,
+            })
+            .collect(),
+        repeat: gif::Repeat::Finite(2),
+    }
+    .save(&path)
     .unwrap();
+    click(&mut rt, "open");
+    rt.resolve_file_dialog(Some(path)).unwrap();
     rt.frame(0.01);
     settle(&mut rt);
     assert_eq!(rt.state.cards, cards);
     assert_eq!(rt.state.collapsed, collapsed);
     assert_eq!(rt.state.next_id, next_id);
     assert_eq!(rt.state.selected, Some(1));
-    assert_eq!(rt.state.name, "hummingbird.gif");
+    assert_eq!(rt.state.name, "replacement.gif");
     assert_eq!(
         rt.state.source.as_ref().unwrap().frames[0]
             .pixels
             .dimensions(),
-        (480, 270)
+        (64, 48)
     );
     assert_eq!(
         rt.state.displayed.as_ref().unwrap().frames[0]
@@ -316,7 +326,7 @@ fn replacing_source_keeps_effects_and_can_be_undone_and_redone() {
     assert_eq!(rt.state.cards, cards);
     rt.state.redo();
     settle(&mut rt);
-    assert_eq!(rt.state.name, "hummingbird.gif");
+    assert_eq!(rt.state.name, "replacement.gif");
     assert_eq!(rt.state.cards, cards);
 }
 
